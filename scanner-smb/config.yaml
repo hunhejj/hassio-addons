@@ -31,4 +31,3 @@ schema:
   scanner_username: str
   scanner_password: password
   legacy_ip: str
-image: ghcr.io/{arch}-addon-scanner-smb
