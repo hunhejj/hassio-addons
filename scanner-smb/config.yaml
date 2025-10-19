@@ -1,0 +1,34 @@
+name: Scanner SMB Share
+version: "1.0.0"
+slug: scanner_smb
+description: Dual SMB shares for legacy Canon scanner and modern Windows access
+url: https://github.com/your-username/hassio-addons
+arch:
+  - armhf
+  - armv7
+  - aarch64
+  - amd64
+  - i386
+startup: services
+boot: auto
+init: false
+privileged:
+  - NET_ADMIN
+  - SYS_ADMIN
+ports:
+  137/udp: 137
+  138/udp: 138
+  139/tcp: 139
+  445/tcp: 445
+host_network: true
+options:
+  workgroup: WORKGROUP
+  scanner_username: scanner
+  scanner_password: CHANGEME!
+  legacy_ip: 192.168.0.254
+schema:
+  workgroup: str
+  scanner_username: str
+  scanner_password: password
+  legacy_ip: str
+image: ghcr.io/{arch}-addon-scanner-smb
