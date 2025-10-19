@@ -1,13 +1,12 @@
-FROM debian:bullseye-slim
+ARG BUILD_FROM
+FROM $BUILD_FROM
 
 # Install Samba and required tools
-RUN apt-get update && \
-    apt-get install -y \
+RUN apk add --no-cache \
     samba \
-    samba-common-bin \
+    samba-common-tools \
     iproute2 \
-    procps \
-    && rm -rf /var/lib/apt/lists/*
+    procps
 
 # Create scan directory
 RUN mkdir -p /share/scan && chmod 777 /share/scan

@@ -10,7 +10,7 @@ bashio::log.info "Starting Dual Samba Server..."
 bashio::log.info "Legacy IP for Canon: ${LEGACY_IP}"
 
 # Create user for modern SMB
-adduser -D -H -s /bin/false "${USERNAME}" 2>/dev/null || true
+adduser -D -H -s /sbin/nologin "${USERNAME}" 2>/dev/null || true
 echo -e "${PASSWORD}\n${PASSWORD}" | smbpasswd -a -s "${USERNAME}"
 smbpasswd -e "${USERNAME}"
 
