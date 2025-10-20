@@ -1,4 +1,6 @@
-#!/usr/bin/with-contenv bashio
+#!/usr/bin/env bashio
+
+bashio::log.info "Getting configuration..."
 
 # Get configuration
 WORKGROUP=$(bashio::config 'workgroup')
@@ -22,16 +24,16 @@ cat > /etc/samba/smb-legacy.conf << EOF
    security = user
    map to guest = Bad User
    guest account = nobody
-   
+
    # Force SMB1 for old Canon printers
    server min protocol = NT1
    client min protocol = NT1
    server max protocol = NT1
-   
+
    # Network settings for legacy
    interfaces = ${LEGACY_IP}/24
    bind interfaces only = no
-   
+
    log level = 1
    load printers = no
    printing = bsd
@@ -54,11 +56,11 @@ cat > /etc/samba/smb.conf << EOF
    workgroup = ${WORKGROUP}
    server string = Scan Server
    security = user
-   
+
    # Modern SMB2/3 only
    server min protocol = SMB2
    client min protocol = SMB2
-   
+
    log level = 1
    load printers = no
    printing = bsd
