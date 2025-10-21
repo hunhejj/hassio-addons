@@ -1,14 +1,20 @@
+---
 name: "Dual Samba Server"
+description: "Dual Samba server for legacy Canon scanner and modern Windows access"
+url: "https://github.com/hunhejj/hassio-addons"
 version: "1.0.0"
 slug: samba_dual
-description: "Dual Samba server for legacy Canon scanner and modern Windows access"
 arch:
-  - armhf
-  - armv7
   - aarch64
   - amd64
+  - armhf
+  - armv7
   - i386
 host_network: true
+startup: application
+boot: auto
+map:
+  - share:rw
 ports:
   139/tcp: 139
   445/tcp: 445
@@ -25,7 +31,3 @@ schema:
   legacy_ip: str
   username: str
   password: str
-map:
-  - share:rw
-startup: services
-boot: auto
