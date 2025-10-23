@@ -1,0 +1,27 @@
+---
+name: "SMTP relay"
+description: "A simple smtp relay"
+url: "https://github.com/hunhejj/hassio-addons"
+version: "1.0.0"
+slug: "smtp-relay"
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+startup: application
+boot: auto
+map:
+  - share:rw
+ports:
+  25/tcp: 25
+schema:
+  smtp_auth_required: bool
+  smtp_relay_host: str
+  smtp_relay_port: port
+  smtp_relay_user: str
+  smtp_relay_pass: password
+  smtp_relay_starttls: bool
+  smtp_relay_timeout_secs: int
+  debug: bool
