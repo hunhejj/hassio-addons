@@ -2,7 +2,7 @@
 name: "SMTP relay"
 description: "A simple smtp relay"
 url: "https://github.com/hunhejj/hassio-addons"
-version: "1.0.0"
+version: "1.0.1"
 slug: "smtp-relay"
 arch:
   - aarch64
