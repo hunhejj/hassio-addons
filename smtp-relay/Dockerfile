@@ -8,7 +8,7 @@ COPY start.sh smtp-relay.py /app/
 RUN chmod 755 /app/start.sh
 RUN chmod 755 /app/smtp-relay.py
 
-RUN apk add --no-cache python3 py3-pip 
+RUN apk add --no-cache ssmtp socat 
 
 ENTRYPOINT ["/app/start.sh"]
 
