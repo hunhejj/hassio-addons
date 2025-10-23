@@ -19,7 +19,6 @@ ports:
 schema:
   smtp_auth_required: bool
   smtp_relay_host: str
-  smtp_relay_port: port
   smtp_relay_user: str
   smtp_relay_pass: password
   smtp_relay_starttls: bool

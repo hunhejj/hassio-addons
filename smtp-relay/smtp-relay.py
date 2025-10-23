@@ -2,15 +2,15 @@
 import os
 import logging
 import smtplib
-import smtpd
-import asyncore
+import socketserver
+import threading
 from email.parser import Parser
 
 # Configuration defaults
 defaults = {
     'SMTP_AUTH_REQUIRED': 'False',
     'SMTP_RELAY_HOST': None,
-    'SMTP_RELAY_PORT': None,
+    'SMTP_RELAY_PORT': '25',
     'SMTP_RELAY_USER': None,
     'SMTP_RELAY_PASS': None,
     'SMTP_RELAY_STARTTLS': None,
@@ -50,28 +50,75 @@ SMTP_AUTH_REQUIRED = config['SMTP_AUTH_REQUIRED']
 TIMEOUT = config['SMTP_RELAY_TIMEOUT_SECS']
 
 
-class RelayServer(smtpd.SMTPServer):
-    """SMTP Relay Server using smtpd"""
+class SMTPHandler(socketserver.BaseRequestHandler):
+    """Handle SMTP connections"""
 
-    def process_message(self, peer, mailfrom, rcpttos, data, **kwargs):
-        """Process and relay incoming messages"""
+    def handle(self):
+        """Handle incoming SMTP connection"""
         try:
-            logger.info(f"Received mail from {mailfrom} to {rcpttos} (peer: {peer})")
+            logger.info(f"Connection from {self.client_address}")
 
-            # Check relay domains if configured
-            if RELAY_DOMAINS:
-                should_relay = False
-                for recipient in rcpttos:
-                    domain = recipient.split('@')[-1] if '@' in recipient else ''
-                    if domain in RELAY_DOMAINS or not domain:
-                        should_relay = True
+            # Send greeting
+            self.send_response("220 SMTP Relay Ready")
+
+            mail_from = None
+            rcpt_to = []
+            data = ""
+            in_data = False
+
+            while True:
+                try:
+                    line = self.request.recv(1024).decode('utf-8').strip()
+                    if not line:
                         break
 
-                if not should_relay:
-                    logger.warning(f"Rejecting mail - no recipients in allowed relay domains")
-                    return '550 Relaying denied'
+                    logger.debug(f"Received: {line}")
 
-            # Relay the message
+                    if line.upper().startswith("EHLO") or line.upper().startswith("HELO"):
+                        self.send_response("250 Hello")
+                    elif line.upper().startswith("MAIL FROM:"):
+                        mail_from = line[10:].strip().strip('<>')
+                        self.send_response("250 OK")
+                    elif line.upper().startswith("RCPT TO:"):
+                        rcpt_to.append(line[8:].strip().strip('<>'))
+                        self.send_response("250 OK")
+                    elif line.upper() == "DATA":
+                        self.send_response("354 Start mail input; end with <CRLF>.<CRLF>")
+                        in_data = True
+                    elif in_data:
+                        if line == ".":
+                            # End of data, relay the message
+                            self.relay_message(mail_from, rcpt_to, data)
+                            self.send_response("250 OK")
+                            in_data = False
+                            data = ""
+                            mail_from = None
+                            rcpt_to = []
+                        else:
+                            data += line + "\r\n"
+                    elif line.upper() == "QUIT":
+                        self.send_response("221 Bye")
+                        break
+                    else:
+                        self.send_response("250 OK")
+
+                except Exception as e:
+                    logger.error(f"Error handling command: {e}")
+                    self.send_response("451 Temporary failure")
+
+        except Exception as e:
+            logger.error(f"Connection error: {e}")
+
+    def send_response(self, response):
+        """Send response to client"""
+        self.request.send(f"{response}\r\n".encode('utf-8'))
+
+    def relay_message(self, mail_from, rcpt_to, data):
+        """Relay the message through external SMTP"""
+        try:
+            logger.info(f"Relaying message from {mail_from} to {rcpt_to}")
+
+            # Connect to relay server
             if USE_TLS:
                 smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=TIMEOUT)
                 smtp.starttls()
@@ -82,34 +129,32 @@ class RelayServer(smtpd.SMTPServer):
                 if SMTP_AUTH_REQUIRED:
                     smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
 
-                # Send the message with original data
-                smtp.sendmail(mailfrom, rcpttos, data)
-
-                logger.info(f"Successfully relayed mail to {rcpttos}")
+                # Send the message
+                smtp.sendmail(mail_from, rcpt_to, data)
+                logger.info(f"Successfully relayed to {rcpt_to}")
 
             finally:
                 smtp.quit()
 
-            return None  # Success
-
         except Exception as e:
             logger.error(f"Error relaying message: {e}", exc_info=True)
-            return '451 Temporary failure, please try again later'
+            raise
 
 
 def main():
     logger.info(f"Starting SMTP Relay on port 25, forwarding to {SMTP_HOST}:{SMTP_PORT}")
 
-    # Create the relay server
-    server = RelayServer(('0.0.0.0', 25), None)
+    # Create the server
+    server = socketserver.ThreadingTCPServer(('0.0.0.0', 25), SMTPHandler)
 
     logger.info("SMTP Relay server is running...")
 
     try:
-        # Start the asyncore loop
-        asyncore.loop()
+        # Start the server
+        server.serve_forever()
     except KeyboardInterrupt:
         logger.info("SMTP Relay stopped")
+        server.shutdown()
 
 
 if __name__ == '__main__':
