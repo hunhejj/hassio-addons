@@ -66,41 +66,55 @@ class SMTPHandler(socketserver.BaseRequestHandler):
             data = ""
             in_data = False
 
+            buffer = ""
             while True:
                 try:
-                    line = self.request.recv(1024).decode('utf-8').strip()
-                    if not line:
+                    chunk = self.request.recv(1024).decode('utf-8')
+                    if not chunk:
                         break
-
-                    logger.debug(f"Received: {line}")
-
-                    if line.upper().startswith("EHLO") or line.upper().startswith("HELO"):
-                        self.send_response("250 Hello")
-                    elif line.upper().startswith("MAIL FROM:"):
-                        mail_from = line[10:].strip().strip('<>')
-                        self.send_response("250 OK")
-                    elif line.upper().startswith("RCPT TO:"):
-                        rcpt_to.append(line[8:].strip().strip('<>'))
-                        self.send_response("250 OK")
-                    elif line.upper() == "DATA":
-                        self.send_response("354 Start mail input; end with <CRLF>.<CRLF>")
-                        in_data = True
-                    elif in_data:
-                        if line == ".":
-                            # End of data, relay the message
-                            self.relay_message(mail_from, rcpt_to, data)
-                            self.send_response("250 OK")
-                            in_data = False
-                            data = ""
-                            mail_from = None
-                            rcpt_to = []
+                    
+                    buffer += chunk
+                    
+                    # Process complete lines
+                    while '\r\n' in buffer:
+                        line, buffer = buffer.split('\r\n', 1)
+                        
+                        logger.debug(f"Received: {line}")
+                        
+                        if not in_data:
+                            if line.upper().startswith("EHLO") or line.upper().startswith("HELO"):
+                                self.send_response("250 Hello")
+                            elif line.upper().startswith("MAIL FROM:"):
+                                mail_from = line[10:].strip().strip('<>')
+                                self.send_response("250 OK")
+                            elif line.upper().startswith("RCPT TO:"):
+                                rcpt_to.append(line[8:].strip().strip('<>'))
+                                self.send_response("250 OK")
+                            elif line.upper() == "DATA":
+                                self.send_response("354 Start mail input; end with <CRLF>.<CRLF>")
+                                in_data = True
+                                data = ""
+                            elif line.upper() == "QUIT":
+                                self.send_response("221 Bye")
+                                return
+                            else:
+                                self.send_response("250 OK")
                         else:
-                            data += line + "\r\n"
-                    elif line.upper() == "QUIT":
-                        self.send_response("221 Bye")
-                        break
-                    else:
-                        self.send_response("250 OK")
+                            # In DATA mode
+                            if line == ".":
+                                # End of data, relay the message
+                                logger.info("End of message received, relaying...")
+                                self.relay_message(mail_from, rcpt_to, data)
+                                self.send_response("250 OK Message accepted")
+                                in_data = False
+                                data = ""
+                                mail_from = None
+                                rcpt_to = []
+                            else:
+                                # Handle dot stuffing (RFC 5321)
+                                if line.startswith("."):
+                                    line = line[1:]
+                                data += line + "\r\n"
 
                 except Exception as e:
                     logger.error(f"Error handling command: {e}")
