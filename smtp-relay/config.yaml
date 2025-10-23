@@ -23,5 +23,5 @@ schema:
   smtp_relay_user: str
   smtp_relay_pass: password
   smtp_relay_starttls: bool
-  smtp_relay_timeout_secs: int
+  smtp_relay_timeout_secs: int?
   debug: bool
