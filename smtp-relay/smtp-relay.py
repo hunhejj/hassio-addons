@@ -8,12 +8,12 @@ from email.parser import Parser
 
 # Configuration defaults
 defaults = {
-    'SMTP_AUTH_REQUIRED': 'true',
-    'SMTP_RELAY_HOST': 'smtp.gmail.com',
-    'SMTP_RELAY_PORT': '587',
-    'SMTP_RELAY_USER': '',
-    'SMTP_RELAY_PASS': '',
-    'SMTP_RELAY_STARTTLS': 'true',
+    'SMTP_AUTH_REQUIRED': 'False',
+    'SMTP_RELAY_HOST': None,
+    'SMTP_RELAY_PORT': None,
+    'SMTP_RELAY_USER': None,
+    'SMTP_RELAY_PASS': None,
+    'SMTP_RELAY_STARTTLS': None,
     'SMTP_RELAY_TIMEOUT_SECS': '30',
     'DEBUG': 'false'
 }
@@ -52,12 +52,12 @@ TIMEOUT = config['SMTP_RELAY_TIMEOUT_SECS']
 
 class RelayServer(smtpd.SMTPServer):
     """SMTP Relay Server using smtpd"""
-    
+
     def process_message(self, peer, mailfrom, rcpttos, data, **kwargs):
         """Process and relay incoming messages"""
         try:
             logger.info(f"Received mail from {mailfrom} to {rcpttos} (peer: {peer})")
-            
+
             # Check relay domains if configured
             if RELAY_DOMAINS:
                 should_relay = False
@@ -66,32 +66,32 @@ class RelayServer(smtpd.SMTPServer):
                     if domain in RELAY_DOMAINS or not domain:
                         should_relay = True
                         break
-                
+
                 if not should_relay:
                     logger.warning(f"Rejecting mail - no recipients in allowed relay domains")
                     return '550 Relaying denied'
-            
+
             # Relay the message
             if USE_TLS:
                 smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=TIMEOUT)
                 smtp.starttls()
             else:
                 smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=TIMEOUT)
-            
+
             try:
                 if SMTP_AUTH_REQUIRED:
                     smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
-                
+
                 # Send the message with original data
                 smtp.sendmail(mailfrom, rcpttos, data)
-                
+
                 logger.info(f"Successfully relayed mail to {rcpttos}")
-                
+
             finally:
                 smtp.quit()
-            
+
             return None  # Success
-            
+
         except Exception as e:
             logger.error(f"Error relaying message: {e}", exc_info=True)
             return '451 Temporary failure, please try again later'
@@ -99,12 +99,12 @@ class RelayServer(smtpd.SMTPServer):
 
 def main():
     logger.info(f"Starting SMTP Relay on port 25, forwarding to {SMTP_HOST}:{SMTP_PORT}")
-    
+
     # Create the relay server
     server = RelayServer(('0.0.0.0', 25), None)
-    
+
     logger.info("SMTP Relay server is running...")
-    
+
     try:
         # Start the asyncore loop
         asyncore.loop()
