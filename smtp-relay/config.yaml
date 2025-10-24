@@ -2,7 +2,7 @@
 name: "SMTP relay"
 description: "A simple smtp relay"
 url: "https://github.com/hunhejj/hassio-addons"
-version: "1.0.6"
+version: "1.0.5"
 slug: "smtp-relay"
 arch:
   - aarch64
@@ -16,14 +16,11 @@ map:
   - share:rw
 ports:
   25/tcp: 25
-options:
- smtp_relay_port: 587
- smtp_relay_starttls: true
- smtp_relay_timeout_secs: 10
 schema:
+  smtp_auth_required: bool
   smtp_relay_host: str
-  smtp_relay_port: port
-  smtp_relay_user: str?
-  smtp_relay_pass: password?
+  smtp_relay_user: str
+  smtp_relay_pass: password
   smtp_relay_starttls: bool
-  smtp_relay_timeout_secs: int
+  smtp_relay_timeout_secs: int?
+  debug: bool
