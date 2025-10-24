@@ -1,31 +1,31 @@
 #!/usr/bin/env bashio
 
-bashio::log.info "Configuring SMTP relay..."
+bashio::log.info "getting configuration..."
+CONFIG_PATH=/data/options.json
 
-# Get configuration from Home Assistant
-RELAY_HOST="$(bashio::config 'smtp_relay_host')"
-RELAY_PORT="$(bashio::config 'smtp_relay_port')"
-RELAY_USER="$(bashio::config 'smtp_relay_user')"  
-RELAY_PASS="$(bashio::config 'smtp_relay_pass')"
-USE_STARTTLS="$(bashio::config 'smtp_relay_starttls')"
+#grab this first since we'll use it below
+DEBUG="$(bashio::config 'debug')"
+if [[ -n $DEBUG ]] && [[ $DEBUG != "null" ]]; then
+    if [[ $DEBUG = "true" ]]; then
+        bashio::log.info "exporting [DEBUG=${DEBUG}]"
+    fi
+    export DEBUG
+fi
 
-# Create ssmtp configuration
-cat > /etc/ssmtp/ssmtp.conf << EOF
-root=${RELAY_USER}
-mailhub=${RELAY_HOST}:${RELAY_PORT}
-hostname=homeassistant
-AuthUser=${RELAY_USER}
-AuthPass=${RELAY_PASS}
-UseSTARTTLS=${USE_STARTTLS}
-UseTLS=${USE_STARTTLS}
-rewriteDomain=${RELAY_HOST}
-FromLineOverride=YES
-EOF
+#grab the rest in a loop
+for var in \
+    smtp_auth_required \
+    smtp_relay_host smtp_relay_port smtp_relay_user smtp_relay_pass smtp_relay_starttls smtp_relay_timeout_secs \
+;
+do
+    v="$(bashio::config ${var})"
+    if [[ -n $v ]] && [[ $v != "null" ]]; then
+        if [[ $DEBUG = "true" ]]; then
+            bashio::log.info "exporting [${var^^}=${v}]"
+        fi
+        export ${var^^}=${v}
+    fi
+done
 
-# Create revaliases for local delivery
-echo "root:${RELAY_USER}:${RELAY_HOST}:${RELAY_PORT}" > /etc/ssmtp/revaliases
-
-bashio::log.info "Starting SMTP relay server..."
-
-# Start ssmtp as SMTP server (simple approach - use socat to listen on port 25)
-socat TCP-LISTEN:25,fork EXEC:"/usr/sbin/ssmtp -t"
+bashio::log.info "starting application..."
+python3 /app/smtp-relay.py
