@@ -3,11 +3,12 @@ FROM $BUILD_FROM
 
 WORKDIR /app
 
-COPY start.sh /app/
+COPY start.sh smtp-relay.py /app/
 
 RUN chmod 755 /app/start.sh
+RUN chmod 755 /app/smtp-relay.py
 
-RUN apk add --no-cache ssmtp socat
+RUN apk add --no-cache ssmtp socat 
 
 ENTRYPOINT ["/app/start.sh"]
 
