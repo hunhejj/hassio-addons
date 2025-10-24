@@ -14,7 +14,6 @@ fi
 
 #grab the rest in a loop
 for var in \
-    smtp_auth_required \
     smtp_relay_host smtp_relay_port smtp_relay_user smtp_relay_pass smtp_relay_starttls smtp_relay_timeout_secs \
 ;
 do

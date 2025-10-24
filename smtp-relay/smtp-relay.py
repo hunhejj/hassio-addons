@@ -72,15 +72,15 @@ class SMTPHandler(socketserver.BaseRequestHandler):
                     chunk = self.request.recv(1024).decode('utf-8')
                     if not chunk:
                         break
-                    
+
                     buffer += chunk
-                    
+
                     # Process complete lines
                     while '\r\n' in buffer:
                         line, buffer = buffer.split('\r\n', 1)
-                        
+
                         logger.debug(f"Received: {line}")
-                        
+
                         if not in_data:
                             if line.upper().startswith("EHLO") or line.upper().startswith("HELO"):
                                 self.send_response("250 Hello")
@@ -140,8 +140,7 @@ class SMTPHandler(socketserver.BaseRequestHandler):
                 smtp = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=TIMEOUT)
 
             try:
-                if SMTP_AUTH_REQUIRED:
-                    smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
+                smtp.login(SMTP_USERNAME, SMTP_PASSWORD)
 
                 # Send the message
                 smtp.sendmail(mail_from, rcpt_to, data)
