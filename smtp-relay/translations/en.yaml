@@ -1,0 +1,23 @@
+---
+configuration:
+    smtp_relay_host:
+        description: >-
+            The hostname (or IP address) of the SMTP server to use as a relay when forwarding messages & sending them on their way
+    smtp_relay_port:
+        description: >-
+            The port for the SMTP relay server
+    smtp_relay_user:
+        description: >-
+            The username for authenticating to the SMTP relay server
+    smtp_relay_pass:
+        description: >-
+            The password for authenticating to the SMTP relay server
+    smtp_relay_starttls:
+        description: >-
+            Whether or not to issue the STARTTLS command to the SMTP relay server
+    smtp_relay_timeout_secs:
+        name: SMTP Relay Timeout, in seconds
+        description: >-
+            Number of seconds to allow for sending the email on its way via the SMTP relay server (defaults to 10 seconds)
+network:
+    25/tcp: The port that Home Assistant will listen on for incoming SMTP connections
